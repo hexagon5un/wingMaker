@@ -1,0 +1,8 @@
+towerA_dist: 50
+towerB_dist: 50
+block_width: 500
+
+feed_rate: 200
+margin: 10
+
+
