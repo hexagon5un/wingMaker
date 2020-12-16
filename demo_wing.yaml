@@ -10,6 +10,9 @@ washoutB: 2
 sweepA: 0
 sweepB: 50
 
+liftA: 0
+liftB: 5
+
 towerA_dist: 50
 towerB_dist: 50
 

@@ -43,11 +43,11 @@ def twist_profile(profile, degrees_washout):
             centerY + sign(x) * radius * math.sin(theta2)])
     return(twisted)
 
-def scale_and_sweep_profile(profile, chord, sweep):
+def scale_and_sweep_profile(profile, chord, sweep, lift):
     new_profile = []
     for x,y in profile:
         x = x * chord + sweep
-        y = y * chord
+        y = y * chord + lift
         new_profile.append([x,y])
     return(new_profile)
 
@@ -112,8 +112,10 @@ if __name__ == "__main__":
     ## scale to chord and offset by wing sweep and margin
     offsetA = float(wing['sweepA']) + float(wing['margin'])
     offsetB = float(wing['sweepB']) + float(wing['margin'])
-    profileA = scale_and_sweep_profile( profileA, float(wing['chordA']), offsetA )
-    profileB = scale_and_sweep_profile( profileB, float(wing['chordB']), offsetB )
+    profileA = scale_and_sweep_profile( profileA, float(wing['chordA']),
+            offsetA, float(wing['liftA']) )
+    profileB = scale_and_sweep_profile( profileB, float(wing['chordB']), 
+            offsetB, float(wing['liftB']) )
     
     ## fit to workspace
     coordinates = project_to_towers(profileA, profileB)
