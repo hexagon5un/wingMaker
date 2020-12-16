@@ -16,7 +16,8 @@ def load_data(filename):
             x,y = [float(p[0]), float(p[1])]
             profile.append([x,y])
         except: # whatever kind of non-parsing junk...
-            print(p)
+            # print(p)
+            pass 
     return(profile)
 
 def median(points):
@@ -52,8 +53,8 @@ def scale_and_sweep_profile(profile, chord, sweep):
 
 def project_to_towers(profileA, profileB):
     coordinates = []
-    scaleA = float(setup['towerA_dist'])/float(setup['block_width'])
-    scaleB = float(setup['towerB_dist'])/float(setup['block_width'])
+    scaleA = float(wing['towerA_dist'])/float(wing['block_width'])
+    scaleB = float(wing['towerB_dist'])/float(wing['block_width'])
     for i in range(len(profileA)):
         x = profileA[i][0] + scaleA*(profileA[i][0] - profileB[i][0])
         y = profileA[i][1] + scaleA*(profileA[i][1] - profileB[i][1])
@@ -64,19 +65,22 @@ def project_to_towers(profileA, profileB):
 
 def gcode_preamble(outfile):
     """ do setup """
-    outfile.write("F{}\n".format(setup["feed_rate"]))
+    outfile.write("F{}\n".format(wing["feed_rate"]))
 
 def gcode_postscript(outfile):
     """ do finish up """
 
 if __name__ == "__main__":
     import sys
+    wing_filename = sys.argv[1]
+    wing_gcode_filename = wing_filename.split(".")[0] + ".gcode"
 
-    ## setup first, then wing
-    with open(sys.argv[1], "r") as ymlfile:
-        setup = yaml.load(ymlfile, Loader=yaml.BaseLoader)
-    with open(sys.argv[2], "r") as ymlfile:
-        wing = yaml.load(ymlfile, Loader=yaml.BaseLoader)
+    ## load up wing / setup spec 
+    try:
+        wing = yaml.load(open(wing_filename, "r"), Loader=yaml.BaseLoader)
+    except: 
+        print('Pass a wing spec file as argument.')
+        exit()
 
     ## read in profiles
     profileA = load_data(wing["foilA"])
@@ -94,7 +98,7 @@ if __name__ == "__main__":
     coordinates = project_to_towers(profileA, profileB)
 
     ## writeout to G-code
-    outfile = open("wing.gcode", "w")
+    outfile = open(wing_gcode_filename, "w")
     gcode_preamble(outfile)
     
     for x,y,u,v in coordinates:
@@ -104,28 +108,19 @@ if __name__ == "__main__":
     outfile.close()
 
 
-        
-
-
-    
-    
-
-
-
-    
-
-    ## plot profiles 
-    import matplotlib
-    import matplotlib.pyplot as plt
-    import numpy as np
-    # Data for plotting
-    t = [x[0] for x in profileA]
-    s = [x[1] for x in profileA]
-    xx = [x[0] for x in profileB]
-    yy = [x[1] for x in profileB]
-    fig, ax = plt.subplots()
-    ax.plot(t, s)
-    ax.plot(xx, yy)
-    ax.grid()
-    plt.show()
+    if False:
+        ## plot profiles 
+        import matplotlib
+        import matplotlib.pyplot as plt
+        import numpy as np
+        # Data for plotting
+        t = [x[0] for x in profileA]
+        s = [x[1] for x in profileA]
+        xx = [x[0] for x in profileB]
+        yy = [x[1] for x in profileB]
+        fig, ax = plt.subplots()
+        ax.plot(t, s)
+        ax.plot(xx, yy)
+        ax.grid()
+        plt.show()
 

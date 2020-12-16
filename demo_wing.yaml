@@ -10,3 +10,13 @@ washoutB: 2
 sweepA: 0
 sweepB: 50
 
+towerA_dist: 50
+towerB_dist: 50
+
+block_width: 500
+block_height: 30
+
+feed_rate: 200
+margin: 10
+
+
