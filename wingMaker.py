@@ -63,12 +63,31 @@ def project_to_towers(profileA, profileB):
         coordinates.append([x,y,u,v])
     return(coordinates)
 
-def gcode_preamble(outfile):
-    """ do setup """
-    outfile.write("F{}\n".format(wing["feed_rate"]))
+def gcode_preamble(outfile, coordinates):
+    """ procedure: 
+        zero out, align block, press go"""
 
-def gcode_postscript(outfile):
+    margin = float(wing['margin']) 
+    travel_height = margin + float(wing['block_height'])
+    feed_rate = wing["feed_rate"]
+
+    ## move up and over
+    outfile.write("G0 X{} Y{} U{} V{}\n".format(0, 0, 0, 0))
+    outfile.write("G0 X{} Y{} U{} V{}\n".format(0, travel_height, 0, travel_height))
+    ## move past trailing edge
+    outfile.write("G0 X{} Y{} U{} V{}\n".format(coordinates[0][0]+margin, travel_height, coordinates[0][2]+margin, travel_height))
+    ## first cut, down into the block with margin on trailing edge
+    outfile.write("F{}\n".format(feed_rate))
+    outfile.write("G1 X{} Y{} U{} V{}\n".format(coordinates[0][0]+margin, 0, coordinates[0][2]+margin, 0))
+
+
+def gcode_postscript(outfile, coordinates):
     """ do finish up """
+    margin = float(wing['margin']) 
+    travel_height = margin + float(wing['block_height'])
+
+    outfile.write("G1 X{} Y{} U{} V{}\n".format(coordinates[-1][0]+margin, 0, coordinates[-1][2]+margin, 0))
+    outfile.write("G1 X{} Y{} U{} V{}\n".format(coordinates[-1][0]+margin, travel_height, coordinates[-1][2]+margin, travel_height))
 
 if __name__ == "__main__":
     import sys
@@ -90,21 +109,23 @@ if __name__ == "__main__":
     profileA = twist_profile(profileA, float(wing['washoutA']))
     profileB = twist_profile(profileB, float(wing['washoutB']))
 
-    ## scale to chord and offset by wing sweep
-    profileA = scale_and_sweep_profile( profileA, float(wing['chordA']), float(wing['sweepA']) )
-    profileB = scale_and_sweep_profile( profileB, float(wing['chordB']), float(wing['sweepB']) )
+    ## scale to chord and offset by wing sweep and margin
+    offsetA = float(wing['sweepA']) + float(wing['margin'])
+    offsetB = float(wing['sweepB']) + float(wing['margin'])
+    profileA = scale_and_sweep_profile( profileA, float(wing['chordA']), offsetA )
+    profileB = scale_and_sweep_profile( profileB, float(wing['chordB']), offsetB )
     
     ## fit to workspace
     coordinates = project_to_towers(profileA, profileB)
 
     ## writeout to G-code
     outfile = open(wing_gcode_filename, "w")
-    gcode_preamble(outfile)
+    gcode_preamble(outfile, coordinates)
     
     for x,y,u,v in coordinates:
         outfile.write("G1 X{} Y{} U{} V{}\n".format(x,y,u,v))
 
-    gcode_postscript(outfile)
+    gcode_postscript(outfile, coordinates)
     outfile.close()
 
 
