@@ -1,5 +1,5 @@
-foilA: pw51.dat
-foilB: pw51.dat
+foilA: airfoils/pw51.dat
+foilB: airfoils/pw51.dat
 
 chordA: 165
 chordB: 90 
