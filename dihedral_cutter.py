@@ -19,11 +19,11 @@ radians = angle * math.pi / 180
 xoffset = (default_height + cut_depth) * math.tan(radians) 
 
 g = GcodeWriter( "dihedral_{}_{}.gcode".format(int(angle), int(cut_depth)) )
-g.travel(0, 0, 0, 0)
+# g.travel(0, 0, 0, 0)
 g.travel(0, default_height, 0, default_height)
 g.travel(xoffset, default_height, xoffset, default_height)
 g.move(0, -cut_depth, 0, -cut_depth)
-g.travel(0, 0, 0, 0)
+# g.travel(0, 0, 0, 0)
 g.close()
 
 
