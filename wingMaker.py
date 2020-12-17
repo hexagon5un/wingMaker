@@ -52,15 +52,15 @@ def scale_and_sweep_profile(profile, chord, sweep, lift):
         new_profile.append([x,y])
     return(new_profile)
 
-def project_to_towers(profileA, profileB):
+def project_to_towers(profileX, profileU):
     coordinates = []
-    scaleA = float(wing['towerA_dist'])/float(wing['block_width'])
-    scaleB = float(wing['towerB_dist'])/float(wing['block_width'])
-    for i in range(len(profileA)):
-        x = profileA[i][0] + scaleA*(profileA[i][0] - profileB[i][0])
-        y = profileA[i][1] + scaleA*(profileA[i][1] - profileB[i][1])
-        u = profileB[i][0] + scaleB*(profileB[i][0] - profileA[i][0])
-        v = profileB[i][1] + scaleB*(profileB[i][1] - profileA[i][1])
+    scaleX = float(wing['towerX_dist'])/float(wing['block_width'])
+    scaleU = float(wing['towerU_dist'])/float(wing['block_width'])
+    for i in range(len(profileX)):
+        x = profileX[i][0] + scaleX*(profileX[i][0] - profileU[i][0])
+        y = profileX[i][1] + scaleX*(profileX[i][1] - profileU[i][1])
+        u = profileU[i][0] + scaleU*(profileU[i][0] - profileX[i][0])
+        v = profileU[i][1] + scaleU*(profileU[i][1] - profileX[i][1])
         coordinates.append([x,y,u,v])
     return(coordinates)
 
@@ -93,8 +93,7 @@ def gcode_postscript(gcodewriter, coordinates):
 if __name__ == "__main__":
     import sys
     wing_filename = sys.argv[1]
-    wing_gcode_filename = wing_filename.split(".")[0] + ".gcode"
-    g = GcodeWriter(wing_gcode_filename)
+    wing_gcode_base = wing_filename.split(".")[0]   
 
     ## load up wing / setup spec 
     try:
@@ -103,33 +102,36 @@ if __name__ == "__main__":
         print('Pass a wing spec file as argument.')
         exit()
 
-    ## read in profiles
-    profileA = load_data(wing["foilA"])
-    profileB = load_data(wing["foilB"])
+    symmetry = [ [wing_gcode_base + "_right.gcode", wing['tip'], wing['root']],
+                 [wing_gcode_base + "_left.gcode",  wing['root'], wing['tip']]]
 
-    ## washout wing tip
-    profileA = twist_profile(profileA, float(wing['washoutA']))
-    profileB = twist_profile(profileB, float(wing['washoutB']))
+    for wing_gcode_filename, wingX, wingU in symmetry:
 
-    ## scale to chord and offset by wing sweep and margin
-    offsetA = float(wing['sweepA']) + float(wing['margin'])
-    offsetB = float(wing['sweepB']) + float(wing['margin'])
-    profileA = scale_and_sweep_profile( profileA, float(wing['chordA']),
-            offsetA, float(wing['liftA']) )
-    profileB = scale_and_sweep_profile( profileB, float(wing['chordB']), 
-            offsetB, float(wing['liftB']) )
-    
-    ## fit to workspace
-    coordinates = project_to_towers(profileA, profileB)
+        g = GcodeWriter(wing_gcode_filename)
 
-    ## writeout to G-code
-    gcode_preamble(g, coordinates)
+        ## read in profiles
+        profileX = load_data(wingX["foil"])
+        profileU = load_data(wingU["foil"])
 
-    for x,y,u,v in coordinates:
-        g.move(x, y, u, v)
+        ## washout wing tip
+        profileX = twist_profile(profileX, float(wingX['washout']))
+        profileU = twist_profile(profileU, float(wingU['washout']))
 
-    gcode_postscript(g, coordinates)
-    g.close()
+        ## scale to chord and offset by wing sweep and margin
+        offsetX = float(wingX['sweep']) + float(wing['margin'])
+        offsetU = float(wingU['sweep']) + float(wing['margin'])
+        profileX = scale_and_sweep_profile( profileX, float(wingX['chord']), offsetX, float(wingX['lift']) )
+        profileU = scale_and_sweep_profile( profileU, float(wingU['chord']), offsetU, float(wingU['lift']) )
+        
+        ## fit to workspace
+        coordinates = project_to_towers(profileX, profileU)
+
+        ## writeout to G-code
+        gcode_preamble(g, coordinates)
+        for x,y,u,v in coordinates:
+            g.move(x, y, u, v)
+        gcode_postscript(g, coordinates)
+        g.close()
 
 
     if False:
@@ -138,10 +140,10 @@ if __name__ == "__main__":
         import matplotlib.pyplot as plt
         import numpy as np
         # Data for plotting
-        t = [x[0] for x in profileA]
-        s = [x[1] for x in profileA]
-        xx = [x[0] for x in profileB]
-        yy = [x[1] for x in profileB]
+        t = [x[0] for x in profileX]
+        s = [x[1] for x in profileX]
+        xx = [x[0] for x in profileU]
+        yy = [x[1] for x in profileU]
         fig, ax = plt.subplots()
         ax.plot(t, s)
         ax.plot(xx, yy)

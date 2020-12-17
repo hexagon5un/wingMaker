@@ -1,26 +1,26 @@
-foilA: airfoils/pw51.dat
-foilB: airfoils/pw51.dat
+root:
+  foil: airfoils/pw51.dat
+  chord: 80
+  washout: 0
+  sweep: 0
+  lift: 0
+  
+tip:
+  foil: airfoils/pw51.dat
+  chord: 60 
+  washout: 0
+  sweep: 20
+  lift: 2
 
-chordA: 165
-chordB: 90 
-
-washoutA: 0
-washoutB: 2
-
-sweepA: 0
-sweepB: 50
-
-liftA: 0
-liftB: 5
-
-towerA_dist: 50
-towerB_dist: 50
-
+towerX_dist: 50
+towerU_dist: 40
 block_width: 500
-block_height: 30
 
-feed_rate: 200
 margin: 10
 travel_height: 70
+  #block_height: 30
+
+feed_rate: 200
+
 
 
