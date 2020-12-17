@@ -3,6 +3,7 @@
 import csv
 import yaml
 import math
+from gcodeWriter import GcodeWriter
 
 def load_data(filename):
     """ Load up airfoil profile  
@@ -63,36 +64,37 @@ def project_to_towers(profileA, profileB):
         coordinates.append([x,y,u,v])
     return(coordinates)
 
-def gcode_preamble(outfile, coordinates):
+def gcode_preamble(gcodewriter, coordinates):
     """ procedure: 
         zero out, align block, press go"""
 
     margin = float(wing['margin']) 
-    travel_height = margin + float(wing['block_height'])
+    travel_height = wing['travel_height']
     feed_rate = wing["feed_rate"]
 
-    ## move up and over
-    outfile.write("G0 X{} Y{} U{} V{}\n".format(0, 0, 0, 0))
-    outfile.write("G0 X{} Y{} U{} V{}\n".format(0, travel_height, 0, travel_height))
-    ## move past trailing edge
-    outfile.write("G0 X{} Y{} U{} V{}\n".format(coordinates[0][0]+margin, travel_height, coordinates[0][2]+margin, travel_height))
-    ## first cut, down into the block with margin on trailing edge
-    outfile.write("F{}\n".format(feed_rate))
-    outfile.write("G1 X{} Y{} U{} V{}\n".format(coordinates[0][0]+margin, 0, coordinates[0][2]+margin, 0))
+    gcodewriter.travel(0, travel_height, 0, travel_height) ## move up and over
+    gcodewriter.travel(coordinates[0][0]+margin, travel_height, coordinates[0][2]+margin, travel_height) ## move past trailing edge
+    gcodewriter.set_speed(feed_rate)
+    gcodewriter.move(coordinates[0][0]+margin, coordinates[0][1],
+            coordinates[0][2]+margin, coordinates[0][3]) ## down into the block with margin on trailing edge
 
 
-def gcode_postscript(outfile, coordinates):
+def gcode_postscript(gcodewriter, coordinates):
     """ do finish up """
     margin = float(wing['margin']) 
-    travel_height = margin + float(wing['block_height'])
+    travel_height = wing['travel_height']
+    
+    gcodewriter.move(coordinates[-1][0]+margin, coordinates[-1][1], coordinates[-1][2]+margin, coordinates[-1][3]) ## cut out extra "margin"
+    gcodewriter.move(coordinates[-1][0]+margin, travel_height, coordinates[-1][2]+margin, travel_height) ## then up
+    gcodewriter.travel(0, travel_height, 0, travel_height) ## and back home
+    gcodewriter.travel(0, 0, 0, 0)
 
-    outfile.write("G1 X{} Y{} U{} V{}\n".format(coordinates[-1][0]+margin, 0, coordinates[-1][2]+margin, 0))
-    outfile.write("G1 X{} Y{} U{} V{}\n".format(coordinates[-1][0]+margin, travel_height, coordinates[-1][2]+margin, travel_height))
 
 if __name__ == "__main__":
     import sys
     wing_filename = sys.argv[1]
     wing_gcode_filename = wing_filename.split(".")[0] + ".gcode"
+    g = GcodeWriter(wing_gcode_filename)
 
     ## load up wing / setup spec 
     try:
@@ -121,14 +123,13 @@ if __name__ == "__main__":
     coordinates = project_to_towers(profileA, profileB)
 
     ## writeout to G-code
-    outfile = open(wing_gcode_filename, "w")
-    gcode_preamble(outfile, coordinates)
-    
-    for x,y,u,v in coordinates:
-        outfile.write("G1 X{} Y{} U{} V{}\n".format(x,y,u,v))
+    gcode_preamble(g, coordinates)
 
-    gcode_postscript(outfile, coordinates)
-    outfile.close()
+    for x,y,u,v in coordinates:
+        g.move(x, y, u, v)
+
+    gcode_postscript(g, coordinates)
+    g.close()
 
 
     if False:

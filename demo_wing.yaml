@@ -21,5 +21,6 @@ block_height: 30
 
 feed_rate: 200
 margin: 10
+travel_height: 70
 
 
