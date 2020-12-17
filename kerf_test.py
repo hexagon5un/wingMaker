@@ -3,7 +3,7 @@
 import sys
 from gcodeWriter import GcodeWriter
 
-height = 100 ## tall enough to clear your foam scrap
+height = 40 ## tall enough to clear your foam scrap
 depth = 0    ## will cut to this depth: if you zero on the plate, use a positive number here
 notch = 20   ## makes notches/gaps that are this wide
 speeds = sys.argv[1:]
