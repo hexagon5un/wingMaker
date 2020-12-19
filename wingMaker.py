@@ -10,15 +10,18 @@ def load_data(filename):
     Assumes Selig format for now: from back to front
     Any lines that don't parse as numeric pairs are ignored
     Can't tell top from bottom... """
-    f = csv.reader(open(filename), delimiter=' ', skipinitialspace=True)
+    f = open(filename)
     profile = []
     for p in f:
         try:
-            x,y = [float(p[0]), float(p[1])]
+            x,y = p.strip().split()
+            x=float(x)
+            y=float(y)
             profile.append([x,y])
         except: # whatever kind of non-parsing junk...
             # print(p)
             pass 
+    f.close()
     return(profile)
 
 def median(points):
@@ -29,6 +32,11 @@ def radians_to_degrees(x):
     return(x*180/math.pi)
 def sign(x):
     return(x/abs(x))
+def column_min(data, column):
+    return(min(data, key=lambda x: x[column])[column])
+def column_max(data, column):
+    return(max(data, key=lambda x: x[column])[column])
+
 
 def twist_profile(profile, degrees_washout):
     centerX = median([x[0] for x in profile]) 
@@ -122,6 +130,9 @@ if __name__ == "__main__":
         offsetU = float(wingU['sweep']) + float(wing['margin'])
         profileX = scale_and_sweep_profile( profileX, float(wingX['chord']), offsetX, float(wingX['lift']) )
         profileU = scale_and_sweep_profile( profileU, float(wingU['chord']), offsetU, float(wingU['lift']) )
+        
+        print("max foam height: {}".format(max(column_max(profileX, 1), column_max(profileU,1))))
+        print("min foam height: {}".format(min(column_min(profileX, 1), column_min(profileU,1))))
         
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
