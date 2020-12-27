@@ -5,6 +5,8 @@ import yaml
 import math
 from gcodeWriter import GcodeWriter
 
+epsilon=1.0/100000
+
 def load_data(filename):
     """ Load up airfoil profile  
     Assumes Selig format for now: from back to front
@@ -31,7 +33,10 @@ def degrees_to_radians(theta):
 def radians_to_degrees(x):
     return(x*180/math.pi)
 def sign(x):
-    return(x/abs(x))
+    if x == 0:
+        return(1)
+    else:
+        return(x/abs(x))
 def column_min(data, column):
     return(min(data, key=lambda x: x[column])[column])
 def column_max(data, column):
@@ -44,6 +49,8 @@ def twist_profile(profile, degrees_washout):
     twisted = []
     for x,y in profile:
         x = x - centerX
+        if x==0:
+            x = epsilon ## avoid /0 below
         y = y - centerY
         theta = math.atan( y / x )
         radius = math.sqrt( x**2 + y**2 )
@@ -145,7 +152,7 @@ if __name__ == "__main__":
         g.close()
 
 
-    if False:
+    if True:
         ## plot profiles 
         import matplotlib
         import matplotlib.pyplot as plt
