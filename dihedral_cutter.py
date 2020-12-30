@@ -13,18 +13,16 @@ else:
     angle = float(angle)
     cut_depth = float(cut_depth)
 
-
-default_height = 70  ## change me if you want.  who has such big blocks?
+default_height = 30  ## change me if you want.  
 radians = angle * math.pi / 180   
 xoffset = (default_height + cut_depth) * math.tan(radians) 
 
 g = GcodeWriter( "dihedral_{}_{}.gcode".format(int(angle), int(cut_depth)) )
-# g.travel(0, 0, 0, 0)
 g.travel(0, default_height, 0, default_height)
 g.travel(xoffset, default_height, xoffset, default_height)
 g.set_speed(200)
 g.move(0, -cut_depth, 0, -cut_depth)
-# g.travel(0, 0, 0, 0)
+g.travel(0, 0, 0, 0)
 g.close()
 
 
