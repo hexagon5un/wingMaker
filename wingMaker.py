@@ -49,8 +49,8 @@ def twist_profile(profile, degrees_washout):
     twisted = []
     for x,y in profile:
         x = x - centerX
-        if x==0:
-            x = epsilon ## avoid /0 below
+        if x == 0:
+            x = epsilon ## avoid /0 in arctan
         y = y - centerY
         theta = math.atan( y / x )
         radius = math.sqrt( x**2 + y**2 )
