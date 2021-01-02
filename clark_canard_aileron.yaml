@@ -1,0 +1,28 @@
+root:
+  foil: airfoils/clark_y.dat
+  chord: 100
+  washout: 0
+  sweep: 0
+  lift: 0
+  aileron: 20
+  
+tip:
+  foil: airfoils/clark_y.dat
+  chord: 100          
+  washout: 0
+  sweep: 0
+  lift: 0
+  aileron: 20
+
+block_width: 300
+
+towerX_dist: 130
+towerU_dist: 145
+
+margin: 10
+travel_height: 70
+
+feed_rate: 200
+
+
+
