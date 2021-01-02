@@ -4,7 +4,7 @@ root:
   washout: 0
   sweep: 0
   lift: 0
-  aileron: 20
+  aileron: 25
   
 tip:
   foil: airfoils/clark_y.dat
@@ -12,7 +12,10 @@ tip:
   washout: 0
   sweep: 0
   lift: 0
-  aileron: 20
+  aileron: 25
+
+kerf: 1
+aileron_hinge_thickness: 1
 
 block_width: 300
 

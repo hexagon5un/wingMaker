@@ -66,6 +66,33 @@ def scale_and_sweep_profile(profile, chord, sweep, lift):
         new_profile.append([x,y])
     return(new_profile)
 
+def compensate_kerf(profile, kerf):
+    new_profile = []
+    for i,p in enumerate(profile):
+        try:
+            next_point = profile[i+1]
+            dx = profile[i+1][0] - p[0]
+            dy = profile[i+1][1] - p[1]
+            if dx == 0: ## hopefully only happens on the top side: hack!
+                p[1] = p[1] + kerf 
+                p[0] = p[0] + kerf 
+            else:
+                ## travels CCW around profile, subtracting off 45 degrees
+                angle = math.atan( dy/dx ) 
+                if dx <= 0:
+                    angle = angle - math.pi
+                angle = angle - math.pi/2
+                p[0] = p[0] + math.cos(angle)*kerf
+                p[1] = p[1] + math.sin(angle)*kerf
+        except IndexError: ## last point
+                p[1] = p[1] - kerf
+        
+        new_profile.append(p)
+    
+    return(new_profile)
+                
+
+
 def add_ailerons(profile, width, hinge_depth):
     """close enough is good enough?"""
     # extent = max(column_max(profile, 0)) - min(
@@ -73,8 +100,8 @@ def add_ailerons(profile, width, hinge_depth):
     halfway = int(len(profile)/2)
     top = min(profile[:halfway], key = lambda x: abs(x[0]-cut))[1]
     bottom = min(profile[halfway:], key = lambda x: abs(x[0]-cut))[1]
-    # horizontal travel = depth at 45 degrees
-    travel = top - bottom 
+    # horizontal travel = depth at 45 degrees is too far.
+    travel = 0.75 * (top - bottom)
 
     new_coords = []
     started_cut = False
@@ -96,7 +123,6 @@ def add_ailerons(profile, width, hinge_depth):
                     ## to maintain profile element length -- hack, hack
             else: # done with cut, just copy through
                 new_coords.append(p)
-
     return(new_coords)
 
     
@@ -176,11 +202,20 @@ if __name__ == "__main__":
         print("max foam height: {}".format(max(column_max(profileX, 1), column_max(profileU,1))))
         print("min foam height: {}".format(min(column_min(profileX, 1), column_min(profileU,1))))
         
+        ## compensate kerf
+        try:
+            kerf = float(wing['kerf'])
+        except KeyError: ## default to 1 mm?
+            kerf = 1
+
+        profileX = compensate_kerf(profileX, kerf)
+        profileU = compensate_kerf(profileU, kerf)
+
         ## add aileron cutouts if defined
         try:
-            aileron_depth = float(wing['aileron_depth'])
+            aileron_depth = 2*kerf + float(wing['aileron_hinge_thickness'])
         except KeyError: ## default to 1 mm?
-            aileron_depth = 1
+            aileron_depth = 2*kerf + 1
 
         try: 
             aileronX = float(wingX['aileron'])
@@ -189,6 +224,7 @@ if __name__ == "__main__":
             profileU = add_ailerons(profileU, aileronU, aileron_depth)
         except KeyError: ## no aileron difference passed, ignore
             pass
+
 
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
