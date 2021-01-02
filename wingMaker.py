@@ -42,7 +42,6 @@ def column_min(data, column):
 def column_max(data, column):
     return(max(data, key=lambda x: x[column])[column])
 
-
 def twist_profile(profile, degrees_washout):
     centerX = median([x[0] for x in profile]) 
     centerY = median([x[1] for x in profile]) 
@@ -67,7 +66,43 @@ def scale_and_sweep_profile(profile, chord, sweep, lift):
         new_profile.append([x,y])
     return(new_profile)
 
+def add_ailerons(profile, width, hinge_depth):
+    """close enough is good enough?"""
+    # extent = max(column_max(profile, 0)) - min(
+    cut = column_max(profile, 0) - width
+    halfway = int(len(profile)/2)
+    top = min(profile[:halfway], key = lambda x: abs(x[0]-cut))[1]
+    bottom = min(profile[halfway:], key = lambda x: abs(x[0]-cut))[1]
+    # horizontal travel = depth at 45 degrees
+    travel = top - bottom 
+
+    new_coords = []
+    started_cut = False
+    done_with_cut = False
+    for p in profile:
+        if not started_cut:
+            if p[0] <= cut + travel:
+                new_coords.append([cut, bottom + hinge_depth])
+                started_cut = True
+            else:
+                new_coords.append(p)
+        else: ## in cut
+            if not done_with_cut:
+                if p[0] < cut:  ## last X in cut
+                    new_coords.append([cut, top])
+                    done_with_cut = True
+                else:
+                    new_coords.append([cut, bottom + hinge_depth])
+                    ## to maintain profile element length -- hack, hack
+            else: # done with cut, just copy through
+                new_coords.append(p)
+
+    return(new_coords)
+
+    
+
 def project_to_towers(profileX, profileU):
+    """ this assumes that both profiles have the same number of coordinates """
     coordinates = []
     scaleX = float(wing['towerX_dist'])/float(wing['block_width'])
     scaleU = float(wing['towerU_dist'])/float(wing['block_width'])
@@ -141,6 +176,20 @@ if __name__ == "__main__":
         print("max foam height: {}".format(max(column_max(profileX, 1), column_max(profileU,1))))
         print("min foam height: {}".format(min(column_min(profileX, 1), column_min(profileU,1))))
         
+        ## add aileron cutouts if defined
+        try:
+            aileron_depth = float(wing['aileron_depth'])
+        except KeyError: ## default to 1 mm?
+            aileron_depth = 1
+
+        try: 
+            aileronX = float(wingX['aileron'])
+            aileronU = float(wingU['aileron'])
+            profileX = add_ailerons(profileX, aileronX, aileron_depth)
+            profileU = add_ailerons(profileU, aileronU, aileron_depth)
+        except KeyError: ## no aileron difference passed, ignore
+            pass
+
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
 
