@@ -163,6 +163,7 @@ if __name__ == "__main__":
         xx = [x[0] for x in profileU]
         yy = [x[1] for x in profileU]
         fig, ax = plt.subplots()
+        ax.set_aspect(1)
         ax.plot(t, s)
         ax.plot(xx, yy)
         ax.grid()
