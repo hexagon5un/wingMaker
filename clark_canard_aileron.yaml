@@ -14,8 +14,8 @@ tip:
   lift: 0
   aileron: 25
 
-kerf: 1
-aileron_hinge_thickness: 1
+kerf: 0.65
+aileron_hinge_thickness: 0.5
 
 block_width: 300
 

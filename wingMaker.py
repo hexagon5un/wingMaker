@@ -101,7 +101,7 @@ def add_ailerons(profile, width, hinge_depth):
     top = min(profile[:halfway], key = lambda x: abs(x[0]-cut))[1]
     bottom = min(profile[halfway:], key = lambda x: abs(x[0]-cut))[1]
     # horizontal travel = depth at 45 degrees is too far.
-    travel = 0.75 * (top - bottom)
+    travel = 0.3 * (top - bottom)
 
     new_coords = []
     started_cut = False
