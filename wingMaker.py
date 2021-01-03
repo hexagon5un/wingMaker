@@ -41,6 +41,38 @@ def column_min(data, column):
     return(min(data, key=lambda x: x[column])[column])
 def column_max(data, column):
     return(max(data, key=lambda x: x[column])[column])
+def is_between(a,b,x):
+    if a < x and x < b:
+        return(True)
+    if b < x and x < a:
+        return(True)
+    return(False)
+
+def match_profiles(thisProfile, thatProfile):
+    newProfile = []
+    current = 0
+    for i, p in enumerate(thatProfile):
+            # print (p, thisProfile[current])
+            try: ## handle last case where lookahead impossible
+                direction = sign(thatProfile[i+1][0] - thatProfile[i][0])
+                if direction == 1: ## leading edge to trailing
+                    while p[0] > thisProfile[current+1][0]:
+                        current = current + 1
+                        newProfile.append(thisProfile[current])
+                else: ## trailing to leading edge
+                    while p[0] < thisProfile[current+1][0]:
+                        current = current + 1
+                        newProfile.append(thisProfile[current])
+            except IndexError:  ## done with other profile, append our last one
+                newProfile.extend(thisProfile[current+1:])
+            if p[0] == thisProfile[current][0]:
+                newProfile.append(thisProfile[current])
+            if is_between(thisProfile[current][0], thisProfile[current+1][0], p[0]):
+                midpt = (p[0] - thisProfile[current][0]) / (thisProfile[current+1][0] - thisProfile[current][0]) * (thisProfile[current+1][1] - thisProfile[current][1]) + thisProfile[current][1]
+                newProfile.append([p[0], midpt])
+
+    return(newProfile)
+
 
 def twist_profile(profile, degrees_washout):
     centerX = median([x[0] for x in profile]) 
@@ -189,6 +221,11 @@ if __name__ == "__main__":
         profileX = load_data(wingX["foil"])
         profileU = load_data(wingU["foil"])
 
+        ## match profile points
+        profileX = match_profiles(profileX, profileU)
+        profileU = match_profiles(profileU, profileX)
+
+
         ## washout wing tip
         profileX = twist_profile(profileX, float(wingX['washout']))
         profileU = twist_profile(profileU, float(wingU['washout']))
@@ -224,7 +261,6 @@ if __name__ == "__main__":
             profileU = add_ailerons(profileU, aileronU, aileron_depth)
         except KeyError: ## no aileron difference passed, ignore
             pass
-
 
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
