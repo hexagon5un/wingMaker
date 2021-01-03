@@ -4,7 +4,6 @@ root:
   washout: 0
   sweep: 0
   lift: 0
-  aileron: 25
   
 tip:
   foil: airfoils/reworked_wisel_airfoil.dat
@@ -12,9 +11,9 @@ tip:
   washout: 2
   sweep: 25
   lift: 6
-  aileron: 20
 
 kerf: 0.65
+aileron: 25
 aileron_hinge_thickness: 0.5
 
 block_width: 177

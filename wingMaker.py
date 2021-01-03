@@ -37,16 +37,30 @@ def sign(x):
         return(1)
     else:
         return(x/abs(x))
+
 def column_min(data, column):
     return(min(data, key=lambda x: x[column])[column])
+
 def column_max(data, column):
     return(max(data, key=lambda x: x[column])[column])
+
 def is_between(a,b,x):
     if a < x and x < b:
         return(True)
     if b < x and x < a:
         return(True)
     return(False)
+
+def closest_to(target, value_list):
+    return min(value_list, key = lambda x: abs(x-target))
+def index_closest_to(target, value_list):
+    return value_list.index(closest_to(target, value_list)) 
+
+def linear_interpolate(x1, y1, x2, y2, xm):
+    dx = x2 - x1
+    dy = y2 - y1
+    dm = xm - x1
+    return (dm / dx * dy + y1)
 
 def match_profiles(thisProfile, thatProfile):
     newProfile = []
@@ -68,11 +82,11 @@ def match_profiles(thisProfile, thatProfile):
             if p[0] == thisProfile[current][0]:
                 newProfile.append(thisProfile[current])
             if is_between(thisProfile[current][0], thisProfile[current+1][0], p[0]):
-                midpt = (p[0] - thisProfile[current][0]) / (thisProfile[current+1][0] - thisProfile[current][0]) * (thisProfile[current+1][1] - thisProfile[current][1]) + thisProfile[current][1]
+                midpt = linear_interpolate(thisProfile[current][0],
+                        thisProfile[current][1], thisProfile[current+1][0],
+                        thisProfile[current+1][1], p[0])
                 newProfile.append([p[0], midpt])
-
     return(newProfile)
-
 
 def twist_profile(profile, degrees_washout):
     centerX = median([x[0] for x in profile]) 
@@ -109,55 +123,42 @@ def compensate_kerf(profile, kerf):
                 p[1] = p[1] + kerf 
                 p[0] = p[0] + kerf 
             else:
-                ## travels CCW around profile, subtracting off 45 degrees
+                ## travels CCW around profile, subtracting off 90 degrees
                 angle = math.atan( dy/dx ) 
                 if dx <= 0:
                     angle = angle - math.pi
                 angle = angle - math.pi/2
                 p[0] = p[0] + math.cos(angle)*kerf
                 p[1] = p[1] + math.sin(angle)*kerf
-        except IndexError: ## last point
+        except IndexError: ## last point: assume roughly horizontal, just shift down
                 p[1] = p[1] - kerf
-        
         new_profile.append(p)
-    
     return(new_profile)
-                
 
 
-def add_ailerons(profile, width, hinge_depth):
-    """close enough is good enough?"""
-    # extent = max(column_max(profile, 0)) - min(
-    cut = column_max(profile, 0) - width
+def add_ailerons(profile, percentage, hinge_depth):
+    """cuts ailerons with cord a fixed percentage of the wing"""
+    chord = column_max(profile, 0) - column_min(profile, 0) 
+    aileron_chord = percentage * chord / 100
+    cut = column_max(profile, 0) - aileron_chord
     halfway = int(len(profile)/2)
-    top = min(profile[:halfway], key = lambda x: abs(x[0]-cut))[1]
-    bottom = min(profile[halfway:], key = lambda x: abs(x[0]-cut))[1]
-    # horizontal travel = depth at 45 degrees is too far.
-    travel = 0.3 * (top - bottom)
+    cut_end_index = index_closest_to(cut, [x[0] for x in profile[:halfway]])
 
-    new_coords = []
-    started_cut = False
-    done_with_cut = False
-    for p in profile:
-        if not started_cut:
-            if p[0] <= cut + travel:
-                new_coords.append([cut, bottom + hinge_depth])
-                started_cut = True
-            else:
-                new_coords.append(p)
-        else: ## in cut
-            if not done_with_cut:
-                if p[0] < cut:  ## last X in cut
-                    new_coords.append([cut, top])
-                    done_with_cut = True
-                else:
-                    new_coords.append([cut, bottom + hinge_depth])
-                    ## to maintain profile element length -- hack, hack
-            else: # done with cut, just copy through
-                new_coords.append(p)
-    return(new_coords)
+    ## depth includes 2*kerf at this point: hinge_depth needs to account for
+    ## that, plus the thickness of the hinge remaining
+    top = min(profile[:halfway], key = lambda x: abs(x[0]-profile[cut_end_index][0]))[1]
+    bottom = min(profile[halfway:], key = lambda x: abs(x[0]-profile[cut_end_index][0]))[1]
+    depth = top - bottom - hinge_depth
+    travel = depth * 0.3 ## hardcoded for now -- how wide the cut
+    cut_start_index =  index_closest_to(cut + travel, [x[0] for x in profile[:halfway]])
 
-    
+    print("aileron cutout:", cut_start_index, cut_end_index)
+    ## Remove middle, Add in wedge
+    for i in range(cut_start_index+1, cut_end_index):
+        profile.pop(i)
+    profile.insert(cut_end_index, [profile[cut_end_index][0], (bottom+hinge_depth)] )
+    return profile
+
 
 def project_to_towers(profileX, profileU):
     """ this assumes that both profiles have the same number of coordinates """
@@ -221,12 +222,11 @@ if __name__ == "__main__":
         profileX = load_data(wingX["foil"])
         profileU = load_data(wingU["foil"])
 
-        ## match profile points
+        ## match profile points to each other
         profileX = match_profiles(profileX, profileU)
         profileU = match_profiles(profileU, profileX)
 
-
-        ## washout wing tip
+        ## washout wing tip: rotate profile
         profileX = twist_profile(profileX, float(wingX['washout']))
         profileU = twist_profile(profileU, float(wingU['washout']))
 
@@ -242,25 +242,22 @@ if __name__ == "__main__":
         ## compensate kerf
         try:
             kerf = float(wing['kerf'])
-        except KeyError: ## default to 1 mm?
-            kerf = 1
-
-        profileX = compensate_kerf(profileX, kerf)
-        profileU = compensate_kerf(profileU, kerf)
+            profileX = compensate_kerf(profileX, kerf)
+            profileU = compensate_kerf(profileU, kerf)
+        except KeyError: 
+            print("No kerf specified.  Not compensated.")
 
         ## add aileron cutouts if defined
         try:
-            aileron_depth = 2*kerf + float(wing['aileron_hinge_thickness'])
-        except KeyError: ## default to 1 mm?
-            aileron_depth = 2*kerf + 1
+            aileron_percentage = float(wing['aileron'])
+            aileron_bottom = 2*kerf + float(wing['aileron_hinge_thickness'])
+            profileX = add_ailerons(profileX, aileron_percentage, aileron_bottom)
+            profileU = add_ailerons(profileU, aileron_percentage, aileron_bottom)
+        except KeyError: ## no aileron difference passed
+            print("No aileron cutout.")
 
-        try: 
-            aileronX = float(wingX['aileron'])
-            aileronU = float(wingU['aileron'])
-            profileX = add_ailerons(profileX, aileronX, aileron_depth)
-            profileU = add_ailerons(profileU, aileronU, aileron_depth)
-        except KeyError: ## no aileron difference passed, ignore
-            pass
+        for i in range(10,20):
+            print(profileX[i], profileU[i])
 
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
@@ -278,15 +275,18 @@ if __name__ == "__main__":
         import matplotlib
         import matplotlib.pyplot as plt
         import numpy as np
-        # Data for plotting
-        t = [x[0] for x in profileX]
-        s = [x[1] for x in profileX]
-        xx = [x[0] for x in profileU]
-        yy = [x[1] for x in profileU]
-        fig, ax = plt.subplots()
-        ax.set_aspect(1)
-        ax.plot(t, s)
-        ax.plot(xx, yy)
-        ax.grid()
-        plt.show()
+        def plotme(profileX, profileU):
+            # Data for plotting
+            xx = [x[0] for x in profileX]
+            yy = [x[1] for x in profileX]
+            uu = [x[0] for x in profileU]
+            vv = [x[1] for x in profileU]
+            fig, ax = plt.subplots()
+            ax.set_aspect(1)
+            ax.plot(xx, yy)
+            ax.plot(uu, vv)
+            ax.grid()
+            plt.show()
+        plotme(profileX, profileU)
+
 
