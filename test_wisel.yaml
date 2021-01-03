@@ -1,0 +1,31 @@
+root:
+  foil: airfoils/reworked_wisel_airfoil.dat
+  chord: 100
+  washout: 0
+  sweep: 0
+  lift: 0
+  aileron: 25
+  
+tip:
+  foil: airfoils/reworked_wisel_airfoil.dat
+  chord: 60          
+  washout: 2
+  sweep: 25
+  lift: 6
+  aileron: 20
+
+kerf: 0.65
+aileron_hinge_thickness: 0.5
+
+block_width: 177
+
+towerX_dist: 60
+towerU_dist: 60
+
+margin: 10
+travel_height: 70
+
+feed_rate: 200
+
+
+
