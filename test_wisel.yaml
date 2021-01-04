@@ -13,8 +13,8 @@ tip:
   lift: 6
 
 kerf: 0.65
-aileron: 25
-aileron_hinge_thickness: 0.5
+# aileron: 25
+# aileron_hinge_thickness: 0.5
 
 block_width: 177
 

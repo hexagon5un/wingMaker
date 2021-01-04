@@ -12,6 +12,9 @@ tip:
   sweep: 20
   lift: 2
 
+kerf: 0.65
+aileron: 20
+aileron_hinge_thickness: 0.5
 towerX_dist: 50
 towerU_dist: 40
 block_width: 500

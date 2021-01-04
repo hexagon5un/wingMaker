@@ -120,6 +120,7 @@ def compensate_kerf(profile, kerf):
             dx = profile[i+1][0] - p[0]
             dy = profile[i+1][1] - p[1]
             if dx == 0: ## hopefully only happens on the top side: hack!
+                print("vertical")
                 p[1] = p[1] + kerf 
                 p[0] = p[0] + kerf 
             else:
@@ -215,6 +216,8 @@ if __name__ == "__main__":
                  [wing_gcode_base + "_left.gcode",  wing['root'], wing['tip']]]
 
     for wing_gcode_filename, wingX, wingU in symmetry:
+        print()
+        print("Generating", wing_gcode_filename)
 
         g = GcodeWriter(wing_gcode_filename)
 
@@ -255,9 +258,6 @@ if __name__ == "__main__":
             profileU = add_ailerons(profileU, aileron_percentage, aileron_bottom)
         except KeyError: ## no aileron difference passed
             print("No aileron cutout.")
-
-        for i in range(10,20):
-            print(profileX[i], profileU[i])
 
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
