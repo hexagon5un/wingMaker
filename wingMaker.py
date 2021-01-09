@@ -226,8 +226,12 @@ if __name__ == "__main__":
         profileU = load_data(wingU["foil"])
 
         ## match profile points to each other
-        profileX = match_profiles(profileX, profileU)
-        profileU = match_profiles(profileU, profileX)
+        if not len(profileX) == len(profileU):
+            profileX = match_profiles(profileX, profileU)
+            profileU = match_profiles(profileU, profileX)
+            if not len(profileX) == len(profileU):
+                print("Profile lengths don't match.  Fixme")
+                1/0
 
         ## washout wing tip: rotate profile
         profileX = twist_profile(profileX, float(wingX['washout']))
