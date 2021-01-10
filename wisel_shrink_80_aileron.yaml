@@ -4,18 +4,20 @@ root:
   washout: 0
   sweep: 0
   lift: 0
-  aileron: 30
   
 tip:
   foil: airfoils/reworked_wisel_airfoil.dat
   chord: 144          
-  washout: 2
+  washout: 1
   sweep: 80
   lift: 8
-  aileron: 25
+
+kerf: 0.65
+
+aileron: 15
+aileron_hinge_thickness: 0.5
 
 block_width: 360
-aileron_depth: 1
 
 towerX_dist: 100
 towerU_dist: 110
