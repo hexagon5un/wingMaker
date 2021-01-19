@@ -1,5 +1,5 @@
 root:
-  foil: airfoils/clark_y.dat
+  foil: airfoils/ag11.dat
   chord: 100
   washout: 0
   sweep: 0
