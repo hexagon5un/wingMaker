@@ -1,0 +1,28 @@
+root:
+  foil: airfoils/ag04.dat
+  chord: 120
+  washout: 0
+  sweep: 0
+  lift: 0
+  
+tip:
+  foil: airfoils/ag11.dat
+  chord: 80          
+  washout: 0
+  sweep: 20
+  lift: 2
+
+kerf: 0.55
+
+block_width: 400
+
+towerX_dist: 130
+towerU_dist: 145
+
+margin: 10
+travel_height: 70
+
+feed_rate: 200
+
+
+
