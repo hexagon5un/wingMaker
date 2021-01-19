@@ -56,37 +56,63 @@ def closest_to(target, value_list):
 def index_closest_to(target, value_list):
     return value_list.index(closest_to(target, value_list)) 
 
+def find_neighbors(x, profile):
+    for i in range(len(profile)-1):
+        if is_between(profile[i][0], profile[i+1][0], x):
+            return(profile[i], profile[i+1])
+    return None
+
+
 def linear_interpolate(x1, y1, x2, y2, xm):
     dx = x2 - x1
     dy = y2 - y1
     dm = xm - x1
     return (dm / dx * dy + y1)
 
+def foil_top(profile):
+    return([x for x in profile if x[1] >= 0])
+
+def foil_bottom(profile):
+    return([x for x in profile if x[1] < 0])
+
 def match_profiles(thisProfile, thatProfile):
-    newProfile = []
-    current = 0
-    for i, p in enumerate(thatProfile):
-            # print (p, thisProfile[current])
-            try: ## handle last case where lookahead impossible
-                direction = sign(thatProfile[i+1][0] - thatProfile[i][0])
-                if direction == 1: ## leading edge to trailing
-                    while p[0] > thisProfile[current+1][0]:
-                        current = current + 1
-                        newProfile.append(thisProfile[current])
-                else: ## trailing to leading edge
-                    while p[0] < thisProfile[current+1][0]:
-                        current = current + 1
-                        newProfile.append(thisProfile[current])
-            except IndexError:  ## done with other profile, append our last one
-                newProfile.extend(thisProfile[current+1:])
-            if p[0] == thisProfile[current][0]:
-                newProfile.append(thisProfile[current])
-            if is_between(thisProfile[current][0], thisProfile[current+1][0], p[0]):
-                midpt = linear_interpolate(thisProfile[current][0],
-                        thisProfile[current][1], thisProfile[current+1][0],
-                        thisProfile[current+1][1], p[0])
-                newProfile.append([p[0], midpt])
-    return(newProfile)
+    ## split, merge, reorder
+    top = foil_top(thisProfile)
+    topX = [x[0] for x in top]
+    bottom = foil_bottom(thisProfile)
+    bottomX = [x[0] for x in bottom]
+    that_top = foil_top(thatProfile)
+    that_bottom = foil_bottom(thatProfile)
+
+    for point in that_top: 
+        if point[0] not in topX:
+            xm = point[0]
+            try:
+                lower, higher = find_neighbors(xm, top)
+                ym = linear_interpolate(lower[0], lower[1], higher[0], higher[1], xm)
+                top.append([xm, ym])
+            except TypeError: # when find_neighbors is None -- duplicate closest point
+                # print("top", point)
+                # print([xm, top[index_closest_to(xm, topX)][1]])
+                top.append([xm, top[index_closest_to(xm, topX)][1]])
+
+    for point in that_bottom: 
+        if point[0] not in bottomX:
+            xm = point[0]
+            try:
+                lower, higher = find_neighbors(xm, bottom)
+                ym = linear_interpolate(lower[0], lower[1], higher[0], higher[1], xm)
+                bottom.append([xm, ym])
+            except TypeError: # when find_neighbors is None -- duplicate closest point
+                # print("bottom", point)
+                # print([xm, bottom[index_closest_to(xm, bottomX)][1]])
+                bottom.append([xm, bottom[index_closest_to(xm, bottomX)][1]])
+    
+    top.sort(key=lambda x: x[0], reverse=True)
+    bottom.sort(key=lambda x: x[0])
+    top.extend(bottom)
+    return( top )
+
 
 def twist_profile(profile, degrees_washout):
     centerX = median([x[0] for x in profile]) 
@@ -227,11 +253,15 @@ if __name__ == "__main__":
 
         ## match profile points to each other
         if not len(profileX) == len(profileU):
-            profileX = match_profiles(profileX, profileU)
-            profileU = match_profiles(profileU, profileX)
-            if not len(profileX) == len(profileU):
-                print("Profile lengths don't match.  Fixme")
-                1/0
+            profileX = match_profiles2(profileX, profileU)
+            profileU = match_profiles2(profileU, profileX)
+
+        ## double-check
+        if not len(profileX) == len(profileU):
+            print("Profile lengths don't match.  Fixme")
+            for i in range(min(len(profileX), len(profileU))):
+                print(profileX[i][0], profileU[i][0])
+            1/0
 
         ## washout wing tip: rotate profile
         profileX = twist_profile(profileX, float(wingX['washout']))
@@ -254,6 +284,8 @@ if __name__ == "__main__":
         except KeyError: 
             print("No kerf specified.  Not compensated.")
 
+        print( len(profileX), len(profileU) )
+
         ## add aileron cutouts if defined
         try:
             aileron_percentage = float(wing['aileron'])
@@ -262,6 +294,8 @@ if __name__ == "__main__":
             profileU = add_ailerons(profileU, aileron_percentage, aileron_bottom)
         except KeyError: ## no aileron difference passed
             print("No aileron cutout.")
+        
+        print( len(profileX), len(profileU) )
 
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
