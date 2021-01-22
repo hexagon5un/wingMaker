@@ -1,12 +1,12 @@
 root:
-  foil: airfoils/ag11.dat
+  foil: airfoils/e297.dat
   chord: 100
   washout: 0
   sweep: 0
   lift: 0
   
 tip:
-  foil: airfoils/naca0015.dat
+  foil: airfoils/pw51.dat
   chord: 60          
   washout: 0
   sweep: 25

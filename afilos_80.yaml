@@ -10,7 +10,7 @@ tip:
   chord: 80          
   washout: 0
   sweep: 20
-  lift: 2
+  lift: 0
 
 kerf: 0.55
 

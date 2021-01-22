@@ -1,18 +1,18 @@
 root:
   foil: airfoils/n0009.dat
-  chord: 180
+  chord: 150
   washout: 0
   sweep: 0
   lift: 0
   
 tip:
   foil: airfoils/n0009.dat
-  chord: 100          
+  chord: 75          
   washout: 0
-  sweep: 80
+  sweep: 90
   lift: 0
 
-block_width: 175
+block_width: 150
 towerX_dist: 60
 towerU_dist: 30
 

@@ -7,14 +7,21 @@ from gcodeWriter import GcodeWriter
 
 epsilon=1.0/100000
 
-# DEBUG = True  ## printf debugging!
-DEBUG = False 
+DEBUG = True  ## printf debugging!
+# DEBUG = False 
+PLOTME = True
+
+def foil_top(profile):
+    return([x for x in profile if x[1] >= 0 ])
+
+def foil_bottom(profile):
+    return([x for x in profile if x[1] < 0 ])
 
 def load_data(filename):
     """ Load up airfoil profile  
-    Assumes Selig format for now: from back to front
+    Assumes all top Y >= 0, all bottom Y <=0
     Any lines that don't parse as numeric pairs are ignored
-    Can't tell top from bottom... """
+    """
     f = open(filename)
     profile = []
     for p in f:
@@ -24,10 +31,15 @@ def load_data(filename):
             y=float(y)
             profile.append([x,y])
         except: # whatever kind of non-parsing junk...
-            # print(p)
             pass 
     f.close()
-    return(profile)
+    ## convert to selig format: trailing edge to trailing edge
+    top = foil_top(profile)
+    top.sort(key=lambda x: x[0], reverse=True)
+    bottom = foil_bottom(profile)
+    bottom.sort(key=lambda x: x[0])
+    top.extend(bottom)
+    return(top)
 
 def median(points):
     return( ( max(points) - min(points) ) / 2 )
@@ -72,21 +84,16 @@ def linear_interpolate(x1, y1, x2, y2, xm):
     dm = xm - x1
     return (dm / dx * dy + y1)
 
-def foil_top(profile):
-    return([x for x in profile if x[1] >= 0 - epsilon])
-
-def foil_bottom(profile):
-    return([x for x in profile if x[1] <= 0 + epsilon])
 
 def match_profiles(thisProfile, thatProfile):
     ## split, merge, reorder
     top = foil_top(thisProfile)
     topX = [x[0] for x in top]
-    bottom = foil_bottom(thisProfile)
+    bottom = [[0,0]] ## needs 0,0 for linear interpolation purposes
+    bottom.extend(foil_bottom(thisProfile))
     bottomX = [x[0] for x in bottom]
     that_top = foil_top(thatProfile)
     that_bottom = foil_bottom(thatProfile)
-
 
     ## need to think about wrapping around! 
     for point in that_top: 
@@ -155,7 +162,7 @@ def compensate_kerf(profile, kerf):
             dx = profile[i+1][0] - p[0]
             dy = profile[i+1][1] - p[1]
             if dx == 0: ## hopefully only happens on the top side: hack!
-                print("vertical hack!")
+                print("dx = 0 in kerf compensation: vertical hack!")
                 p[1] = p[1] + kerf 
                 p[0] = p[0] + kerf 
             else:
@@ -242,6 +249,27 @@ def gcode_postscript(gcodewriter, coordinates):
     gcodewriter.travel(0, travel_height, 0, travel_height) ## and back home
     gcodewriter.travel(0, 0, 0, 0)
 
+if PLOTME:
+    ## plot profiles 
+    import matplotlib
+    import matplotlib.pyplot as plt
+    import numpy as np
+    def plotme(profileX, profileU, points=False):
+        # Data for plotting
+        xx = [x[0] for x in profileX]
+        yy = [x[1] for x in profileX]
+        uu = [x[0] for x in profileU]
+        vv = [x[1] for x in profileU]
+        fig, ax = plt.subplots()
+        ax.set_aspect(1)
+        if points:
+            ax.plot(xx, yy, "g-o")
+            ax.plot(uu, vv, "r-o")
+        else:
+            ax.plot(xx, yy)
+            ax.plot(uu, vv)
+        ax.grid()
+        plt.show()
 
 if __name__ == "__main__":
     import sys
@@ -267,15 +295,24 @@ if __name__ == "__main__":
         ## read in profiles
         profileX = load_data(wingX["foil"])
         profileU = load_data(wingU["foil"])
+        if DEBUG:
+            print("wingX: ", wingX["foil"])
+            print("length: ", len(profileX))
+            print("wingU: ", wingU["foil"])
+            print("length: ", len(profileU))
+            # plotme(profileX, profileU)
 
         ## match profile points to each other
         if not len(profileX) == len(profileU):
             profileX = match_profiles(profileX, profileU)
+            # plotme(profileX, profileU)
             profileU = match_profiles(profileU, profileX)
+            # plotme(profileX, profileU)
 
         ## double-check
         if not len(profileX) == len(profileU):
             print("Profile lengths don't match.  Fixme")
+            print("Lengths: ", len(profileX), len(profileU))
             for i in range(min(len(profileX), len(profileU))):
                 print(profileX[i][0], profileU[i][0])
             1/0
@@ -302,7 +339,7 @@ if __name__ == "__main__":
             print("No kerf specified.  Not compensated.")
 
         if DEBUG:
-            print( len(profileX), len(profileU) )
+            print("post kerf lengths: ", len(profileX), len(profileU) )
 
         ## add aileron cutouts if defined
         try:
@@ -314,7 +351,7 @@ if __name__ == "__main__":
             print("No aileron cutout.")
         
         if DEBUG:
-            print( "Lengths: ",  len(profileX), len(profileU) )
+            print( "post aileron lengths: ",  len(profileX), len(profileU) )
 
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
@@ -327,25 +364,8 @@ if __name__ == "__main__":
         g.close()
 
 
-    if True:
-        ## plot profiles 
-        import matplotlib
-        import matplotlib.pyplot as plt
-        import numpy as np
-        def plotme(profileX, profileU):
-            # Data for plotting
-            xx = [x[0] for x in profileX]
-            yy = [x[1] for x in profileX]
-            uu = [x[0] for x in profileU]
-            vv = [x[1] for x in profileU]
-            fig, ax = plt.subplots()
-            ax.set_aspect(1)
-            # ax.plot(xx, yy, "g-o")
-            # ax.plot(uu, vv, "r-o")
-            ax.plot(xx, yy)
-            ax.plot(uu, vv)
-            ax.grid()
-            plt.show()
+    if PLOTME:
         plotme(profileX, profileU)
+        # plotme(profileX, profileU, points=True)
 
 
