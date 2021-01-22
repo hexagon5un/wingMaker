@@ -7,6 +7,9 @@ from gcodeWriter import GcodeWriter
 
 epsilon=1.0/100000
 
+# DEBUG = True  ## printf debugging!
+DEBUG = False 
+
 def load_data(filename):
     """ Load up airfoil profile  
     Assumes Selig format for now: from back to front
@@ -70,10 +73,10 @@ def linear_interpolate(x1, y1, x2, y2, xm):
     return (dm / dx * dy + y1)
 
 def foil_top(profile):
-    return([x for x in profile if x[1] >= 0])
+    return([x for x in profile if x[1] >= 0 - epsilon])
 
 def foil_bottom(profile):
-    return([x for x in profile if x[1] <= 0])
+    return([x for x in profile if x[1] <= 0 + epsilon])
 
 def match_profiles(thisProfile, thatProfile):
     ## split, merge, reorder
@@ -84,6 +87,8 @@ def match_profiles(thisProfile, thatProfile):
     that_top = foil_top(thatProfile)
     that_bottom = foil_bottom(thatProfile)
 
+
+    ## need to think about wrapping around! 
     for point in that_top: 
         if point[0] not in topX:
             xm = point[0]
@@ -92,9 +97,11 @@ def match_profiles(thisProfile, thatProfile):
                 ym = linear_interpolate(lower[0], lower[1], higher[0], higher[1], xm)
                 top.append([xm, ym])
             except TypeError: # when find_neighbors is None -- duplicate closest point
-                print("top", point)
-                print([xm, top[index_closest_to(xm, topX)][1]])
-                top.append([xm, top[index_closest_to(xm, topX)][1]])
+                ## adding 1.0 to Drela's airfoils fixes this.  Crap.
+                ym = top[index_closest_to(xm, topX)][1]
+                top.append([xm, ym])
+                if DEBUG:
+                    print("top extrapolation", point, "to", [xm, ym])
 
     for point in that_bottom: 
         if point[0] not in bottomX:
@@ -104,11 +111,11 @@ def match_profiles(thisProfile, thatProfile):
                 ym = linear_interpolate(lower[0], lower[1], higher[0], higher[1], xm)
                 bottom.append([xm, ym])
             except TypeError: # when find_neighbors is None -- duplicate closest point
-                print("bottom", point)
-                print([xm, bottom[index_closest_to(xm, bottomX)][1]])
-                bottom.append([xm, bottom[index_closest_to(xm, bottomX)][1]])
-                # 1/0
-    
+                ym = bottom[index_closest_to(xm, bottomX)][1]
+                bottom.append([xm, ym])
+                if DEBUG:
+                    print("bottom extrapolation", point, "to", [xm, ym])
+                        
     top.sort(key=lambda x: x[0], reverse=True)
     bottom.sort(key=lambda x: x[0])
     bottom.pop(0)
@@ -148,7 +155,7 @@ def compensate_kerf(profile, kerf):
             dx = profile[i+1][0] - p[0]
             dy = profile[i+1][1] - p[1]
             if dx == 0: ## hopefully only happens on the top side: hack!
-                print("vertical")
+                print("vertical hack!")
                 p[1] = p[1] + kerf 
                 p[0] = p[0] + kerf 
             else:
@@ -181,11 +188,11 @@ def add_ailerons(profile, percentage, hinge_depth):
     travel = depth * 0.3 ## hardcoded for now -- how wide the cut
     cut_start_index =  index_closest_to(cut + travel, [x[0] for x in profile[:halfway]])
 
-    print("aileron cutout:", cut_start_index, cut_end_index)
+    if DEBUG:   
+        print("aileron cutout:", cut_start_index, cut_end_index)
     if cut_end_index - cut_start_index > 1:
         ## linear interpolation along the cut to keep # points constant
         for i in range(cut_start_index + 1, cut_end_index):
-            print(i)
             x, y = profile.pop(i)
             ym = linear_interpolate(profile[cut_start_index][0], profile[cut_start_index][1], 
                     profile[cut_end_index][0], (bottom+hinge_depth), x)
@@ -193,7 +200,7 @@ def add_ailerons(profile, percentage, hinge_depth):
     ## add in hinge bottom
     profile.pop(cut_end_index)
     profile.insert(cut_end_index, [profile[cut_end_index][0], (bottom+hinge_depth)] )
-
+    
     return profile
 
 
@@ -294,7 +301,8 @@ if __name__ == "__main__":
         except KeyError: 
             print("No kerf specified.  Not compensated.")
 
-        print( len(profileX), len(profileU) )
+        if DEBUG:
+            print( len(profileX), len(profileU) )
 
         ## add aileron cutouts if defined
         try:
@@ -305,7 +313,8 @@ if __name__ == "__main__":
         except KeyError: ## no aileron difference passed
             print("No aileron cutout.")
         
-        print( len(profileX), len(profileU) )
+        if DEBUG:
+            print( "Lengths: ",  len(profileX), len(profileU) )
 
         ## fit to workspace
         coordinates = project_to_towers(profileX, profileU)
@@ -330,9 +339,11 @@ if __name__ == "__main__":
             uu = [x[0] for x in profileU]
             vv = [x[1] for x in profileU]
             fig, ax = plt.subplots()
-            #ax.set_aspect(1)
-            ax.plot(xx, yy, "g-o")
-            ax.plot(uu, vv, "r-o")
+            ax.set_aspect(1)
+            # ax.plot(xx, yy, "g-o")
+            # ax.plot(uu, vv, "r-o")
+            ax.plot(xx, yy)
+            ax.plot(uu, vv)
             ax.grid()
             plt.show()
         plotme(profileX, profileU)
