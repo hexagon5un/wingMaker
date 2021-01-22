@@ -73,7 +73,7 @@ def foil_top(profile):
     return([x for x in profile if x[1] >= 0])
 
 def foil_bottom(profile):
-    return([x for x in profile if x[1] < 0])
+    return([x for x in profile if x[1] <= 0])
 
 def match_profiles(thisProfile, thatProfile):
     ## split, merge, reorder
@@ -92,8 +92,8 @@ def match_profiles(thisProfile, thatProfile):
                 ym = linear_interpolate(lower[0], lower[1], higher[0], higher[1], xm)
                 top.append([xm, ym])
             except TypeError: # when find_neighbors is None -- duplicate closest point
-                # print("top", point)
-                # print([xm, top[index_closest_to(xm, topX)][1]])
+                print("top", point)
+                print([xm, top[index_closest_to(xm, topX)][1]])
                 top.append([xm, top[index_closest_to(xm, topX)][1]])
 
     for point in that_bottom: 
@@ -104,12 +104,14 @@ def match_profiles(thisProfile, thatProfile):
                 ym = linear_interpolate(lower[0], lower[1], higher[0], higher[1], xm)
                 bottom.append([xm, ym])
             except TypeError: # when find_neighbors is None -- duplicate closest point
-                # print("bottom", point)
-                # print([xm, bottom[index_closest_to(xm, bottomX)][1]])
+                print("bottom", point)
+                print([xm, bottom[index_closest_to(xm, bottomX)][1]])
                 bottom.append([xm, bottom[index_closest_to(xm, bottomX)][1]])
+                1/0
     
     top.sort(key=lambda x: x[0], reverse=True)
     bottom.sort(key=lambda x: x[0])
+    bottom.pop(0)
     top.extend(bottom)
     return( top )
 
@@ -181,9 +183,17 @@ def add_ailerons(profile, percentage, hinge_depth):
 
     print("aileron cutout:", cut_start_index, cut_end_index)
     ## Remove middle, Add in wedge
-    for i in range(cut_start_index+1, cut_end_index):
-        profile.pop(i)
-    profile.insert(cut_end_index, [profile[cut_end_index][0], (bottom+hinge_depth)] )
+    if cut_end_index - cut_start_index == 1:
+        profile.pop(cut_end_index)
+        profile.insert(cut_end_index, [profile[cut_end_index][0], (bottom+hinge_depth)] )
+    else:  ## more than one point, linear interpolate
+        for i in range(cut_start_index + 1, cut_end_index):
+            x, y = profile.pop(i)
+            ym = linear_interpolate(profile[cut_start_index][0], profile[cut_start_index][1], 
+                    profile[cut_end_index][0], (bottom+hinge_depth), x)
+            profile.insert(i, [x, ym])
+           ##          [profile[cut_end_index][0], (bottom+hinge_depth)] )
+
     return profile
 
 
@@ -253,8 +263,8 @@ if __name__ == "__main__":
 
         ## match profile points to each other
         if not len(profileX) == len(profileU):
-            profileX = match_profiles2(profileX, profileU)
-            profileU = match_profiles2(profileU, profileX)
+            profileX = match_profiles(profileX, profileU)
+            profileU = match_profiles(profileU, profileX)
 
         ## double-check
         if not len(profileX) == len(profileU):
