@@ -107,7 +107,7 @@ def match_profiles(thisProfile, thatProfile):
                 print("bottom", point)
                 print([xm, bottom[index_closest_to(xm, bottomX)][1]])
                 bottom.append([xm, bottom[index_closest_to(xm, bottomX)][1]])
-                1/0
+                # 1/0
     
     top.sort(key=lambda x: x[0], reverse=True)
     bottom.sort(key=lambda x: x[0])
@@ -182,17 +182,17 @@ def add_ailerons(profile, percentage, hinge_depth):
     cut_start_index =  index_closest_to(cut + travel, [x[0] for x in profile[:halfway]])
 
     print("aileron cutout:", cut_start_index, cut_end_index)
-    ## Remove middle, Add in wedge
-    if cut_end_index - cut_start_index == 1:
-        profile.pop(cut_end_index)
-        profile.insert(cut_end_index, [profile[cut_end_index][0], (bottom+hinge_depth)] )
-    else:  ## more than one point, linear interpolate
+    if cut_end_index - cut_start_index > 1:
+        ## linear interpolation along the cut to keep # points constant
         for i in range(cut_start_index + 1, cut_end_index):
+            print(i)
             x, y = profile.pop(i)
             ym = linear_interpolate(profile[cut_start_index][0], profile[cut_start_index][1], 
                     profile[cut_end_index][0], (bottom+hinge_depth), x)
             profile.insert(i, [x, ym])
-           ##          [profile[cut_end_index][0], (bottom+hinge_depth)] )
+    ## add in hinge bottom
+    profile.pop(cut_end_index)
+    profile.insert(cut_end_index, [profile[cut_end_index][0], (bottom+hinge_depth)] )
 
     return profile
 
@@ -330,9 +330,9 @@ if __name__ == "__main__":
             uu = [x[0] for x in profileU]
             vv = [x[1] for x in profileU]
             fig, ax = plt.subplots()
-            ax.set_aspect(1)
-            ax.plot(xx, yy)
-            ax.plot(uu, vv)
+            #ax.set_aspect(1)
+            ax.plot(xx, yy, "g-o")
+            ax.plot(uu, vv, "r-o")
             ax.grid()
             plt.show()
         plotme(profileX, profileU)
