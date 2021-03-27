@@ -19,13 +19,13 @@ kerf: 0.55
 
 block_width: 360
 
-towerX_dist: 100
-towerU_dist: 110
+towerX_dist: 30
+towerU_dist: 30
 
 margin: 10
-travel_height: 70
+travel_height: 120
 
-feed_rate: 200
+feed_rate: 150
 
 
 
