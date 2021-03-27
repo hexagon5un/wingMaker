@@ -4,18 +4,18 @@ root:
   washout: 0
   sweep: 0
   lift: 0
-  
+
 tip:
   foil: airfoils/pw51.dat
-  chord: 125          
+  chord: 125
   washout: 0
   sweep: 150
   lift: 8
 
-kerf: 0.65
+kerf: 0.55
 
-aileron: 15
-aileron_hinge_thickness: 0.5
+  #aileron: 15
+  #aileron_hinge_thickness: 0.5
 
 block_width: 360
 
