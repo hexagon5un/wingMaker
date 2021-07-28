@@ -23,7 +23,9 @@ block_width: 310
 margin: 10 
 travel_height: 50
 
-feed_rate: 200
+feed_rate: 150 
+# at 1 amp -- too much more and the wires seem to break
+#
 
 
 
