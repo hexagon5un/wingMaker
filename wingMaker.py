@@ -232,6 +232,7 @@ def gcode_preamble(gcodewriter, coordinates):
     travel_height = wing['travel_height']
     feed_rate = wing["feed_rate"]
 
+    gcodewriter.absolute_coordinates()
     gcodewriter.travel(0, travel_height, 0, travel_height) ## move up and over
     gcodewriter.travel(coordinates[0][0]+margin, travel_height, coordinates[0][2]+margin, travel_height) ## move past trailing edge
     gcodewriter.set_speed(feed_rate)
