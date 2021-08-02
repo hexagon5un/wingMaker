@@ -1,0 +1,26 @@
+root:
+  foil: airfoils/naca0015.dat
+  chord: 640
+  washout: 0
+  sweep: 0
+  lift: 0
+  
+tip:
+  foil: airfoils/naca0015.dat
+  chord: 640 
+  washout: 0
+  sweep: 0
+  lift: 0
+
+kerf: 0.55
+towerX_dist: 50
+towerU_dist: 50
+block_width: 60 ## cut two at once
+
+margin: 5
+travel_height: 50
+
+feed_rate: 100
+
+
+
