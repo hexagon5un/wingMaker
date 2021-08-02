@@ -176,37 +176,53 @@ def scale_and_sweep_profile(profile, chord, sweep, lift):
         new_profile.append([x,y])
     return(new_profile)
 
-def compensate_kerf(profile, kerf):
-    new_profile = []
+def calculate_normals(profile):
+    normals = []
     for i,p in enumerate(profile):
         try:
             next_point = profile[i+1]
             dx = profile[i+1][0] - p[0]
             dy = profile[i+1][1] - p[1]
-            if dx == 0: ## hopefully only happens on the top side: hack!
-                print("dx = 0 in kerf compensation: vertical hack!")
-                p[1] = p[1] + kerf 
-                p[0] = p[0] + kerf 
-            else:
-                ## travels CCW around profile, subtracting off 90 degrees
-                angle = math.atan( dy/dx ) 
-                if dx <= 0:
-                    angle = angle - math.pi
-                angle = angle - math.pi/2
-                p[0] = p[0] + math.cos(angle)*kerf
-                p[1] = p[1] + math.sin(angle)*kerf
+            angle = math.atan( dy/dx ) 
+            if dx <= 0:  ## arctangent stuff, bounded -pi/2, pi/2
+                angle = angle - math.pi
+            ## travels CCW around profile, subtracting off 90 degrees
+            angle = angle - math.pi/2
+            normalX = math.cos(angle)
+            normalY = math.sin(angle)
         except IndexError: ## last point: assume roughly horizontal, just shift down
-                p[1] = p[1] - kerf
-        new_profile.append(p)
-    return(new_profile)
+                normalX = 0
+                normalY = -1
+        normals.append((normalX, normalY))
+    return(normals)
 
-def extra_kerf_for_luminance(thisProfile, thatProfile, kerf):
-    '''Add extra kerf to points where the current profile is going slower than
+def calculate_distances(profile):
+    distances = []
+    for i,p in enumerate(profile):
+        try:
+            next_point = profile[i+1]
+            dx = profile[i+1][0] - p[0]
+            dy = profile[i+1][1] - p[1]
+            dist = math.sqrt(dx**2 + dy**2)
+        except IndexError: ## last point: punt.
+            dist = 10
+        distances.append(dist)
+    return(distances)
+    
+
+def compensate_kerf(thisProfile, thatProfile, kerf):
+    '''Add extra kerf outisde, and even more to points where the current profile is going slower than
     the other profile.  For now a linear guesstimate should work'''
-    ## Interate over points, calculate speed between previous and next point
-    ## increase kerf by kerf / relative speed if it's the slower side
-    ## just pass through if it's the faster side
-    pass
+    thisNormals = calculate_normals(thisProfile)
+    thisDistances = calculate_distances(thisProfile)
+    thatDistances = calculate_distances(thatProfile)
+    for i,p in enumerate(thisProfile):
+        relative_distance = thatDistances[i]/thisDistances[i]  
+        ## introduce some other function of relative_distance if necessary
+        ## luminance-corrected kerf
+        p[0] = p[0] + thisNormals[i][0] * kerf * max(1, relative_distance)
+        p[1] = p[1] + thisNormals[i][1] * kerf * max(1, relative_distance)
+    return(thisProfile)
 
 
 def add_ailerons(profile, percentage, hinge_depth):
@@ -364,8 +380,8 @@ if __name__ == "__main__":
         ## compensate kerf
         try:
             kerf = float(wing['kerf'])
-            profileX = compensate_kerf(profileX, kerf)
-            profileU = compensate_kerf(profileU, kerf)
+            profileX = compensate_kerf(profileX, profileU, kerf)
+            profileU = compensate_kerf(profileU, profileX, kerf)
         except KeyError: 
             print("No kerf specified.  Not compensated.")
 
