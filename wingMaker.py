@@ -7,6 +7,20 @@ from gcodeWriter import GcodeWriter
 
 epsilon=1.0/100000
 
+## Code review Mon Aug  2 10:04:12 AM CEST 2021
+
+## Ailerons have only been trouble.  Consider re-doing, re-thinking, or
+## ignoring
+
+## The distance to the towers doesn't really belong in the YAML file?  It's a
+## set-up parameter rather than a wing parameter -- enter at time of
+## generation?  As command-line option?  Interactive?  Both?
+
+## Might restructure the whole thing to a grid of fine-enough points
+##  then reduce back down by some arbitrary curvature rule?
+
+
+
 DEBUG = True  ## printf debugging!
 # DEBUG = False 
 PLOTME = True
@@ -19,7 +33,7 @@ def foil_bottom(profile):
 
 def load_data(filename):
     """ Load up airfoil profile  
-    Assumes all top Y >= 0, all bottom Y <=0
+    Uses foil_top and foil_bottom functions to parse
     Any lines that don't parse as numeric pairs are ignored
     """
     f = open(filename)
@@ -84,7 +98,8 @@ def linear_interpolate(x1, y1, x2, y2, xm):
     dm = xm - x1
     return (dm / dx * dy + y1)
 
-
+## the load_profile function seems to make a single dataset, which this then
+## takes apart.  redundant?
 def match_profiles(thisProfile, thatProfile):
     ## split, merge, reorder
     top = foil_top(thisProfile)
@@ -96,6 +111,13 @@ def match_profiles(thisProfile, thatProfile):
     that_bottom = foil_bottom(thatProfile)
 
     ## need to think about wrapping around! 
+    ## this part of the code creates points in this profile where the X
+    ## matches, but the Y is linearly interpolated.
+    ## Running this on both profiles should make sure that every X appears
+    ##  in each.  
+    ## A better way to do this might be a cubic interpolation to a sufficiently
+    ##  fine grid of points, but then _really_ want to keep the same max
+    ## resolution on the leading edge, which this does automatically
     for point in that_top: 
         if point[0] not in topX:
             xm = point[0]
@@ -177,6 +199,14 @@ def compensate_kerf(profile, kerf):
                 p[1] = p[1] - kerf
         new_profile.append(p)
     return(new_profile)
+
+def extra_kerf_for_luminance(thisProfile, thatProfile, kerf):
+    '''Add extra kerf to points where the current profile is going slower than
+    the other profile.  For now a linear guesstimate should work'''
+    ## Interate over points, calculate speed between previous and next point
+    ## increase kerf by kerf / relative speed if it's the slower side
+    ## just pass through if it's the faster side
+    pass
 
 
 def add_ailerons(profile, percentage, hinge_depth):
