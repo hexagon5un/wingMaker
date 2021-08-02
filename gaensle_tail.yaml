@@ -9,14 +9,14 @@ tip:
   foil: airfoils/naca0009.dat
   chord: 114 
   washout: 0
-  sweep: 31
+  sweep: 55
   lift: 0
 
 kerf: 0.55
 block_width: 155
 
-towerX_dist: 110
-towerU_dist: 150
+towerX_dist: 40
+towerU_dist: 40
 
 margin: 5
 travel_height: 50
