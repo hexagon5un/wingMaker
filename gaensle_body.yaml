@@ -1,3 +1,8 @@
+# idea is to make an airfoil that can be truncated to make a 30 x 30 mount for the motor
+# but that still has enough width for gear up front.
+# 640 works out to be 97 mm wide, and if cut around 540 long (85%) ends up ~32 wide.  Good enough.
+# If need it wider, use naca0018 or more.  
+
 root:
   foil: airfoils/naca0015.dat
   chord: 640
