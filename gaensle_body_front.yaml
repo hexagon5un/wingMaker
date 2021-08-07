@@ -23,7 +23,7 @@ towerU_dist: 50
 block_width: 60 ## cut two at once
 
 margin: 5
-travel_height: 50
+travel_height: 60
 
 feed_rate: 100
 

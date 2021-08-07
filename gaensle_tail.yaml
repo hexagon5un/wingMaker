@@ -15,8 +15,8 @@ tip:
 kerf: 0.55
 block_width: 155
 
-towerX_dist: 40
-towerU_dist: 40
+towerX_dist: 45
+towerU_dist: 45
 
 margin: 5
 travel_height: 50

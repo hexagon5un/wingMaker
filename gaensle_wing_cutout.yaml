@@ -1,0 +1,27 @@
+root:
+  foil: airfoils/pw51.dat      
+  chord: 220
+  washout: 0
+  sweep: 0
+  lift: 0
+  
+tip:
+  foil: airfoils/pw51.dat      
+  chord: 220 
+  washout: 0
+  sweep: 0
+  lift: 0
+
+kerf: 0.55
+towerX_dist: 37
+towerU_dist: 32
+block_width: 600
+
+margin: 5
+travel_height: 50
+  #block_height: 30
+
+feed_rate: 100
+
+
+
