@@ -17,11 +17,13 @@ towerX_dist: 37
 towerU_dist: 32
 block_width: 600
 
-margin: 5
+margin: 0
 travel_height: 50
   #block_height: 30
 
 feed_rate: 100
 
 
-
+# next time do the inner side of the kerf
+# ans watch for begin/end
+#
